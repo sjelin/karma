@@ -38,7 +38,7 @@ describe('preprocessor', () => {
     })
 
     var injector = new di.Injector([{'preprocessor:fake': ['factory', () => fakePreprocessor]}])
-    pp = m.createPreprocessor({'**/*.js': ['fake']}, null, injector)
+    pp = m.createPreprocessor({'**/*.js': ['fake']}, null, null, injector)
 
     var file = {originalPath: '/some/a.js', path: 'path'}
 
@@ -57,7 +57,7 @@ describe('preprocessor', () => {
     })
 
     var injector = new di.Injector([{'preprocessor:fake': ['factory', () => fakePreprocessor]}])
-    pp = m.createPreprocessor({'**/*.js': ['fake']}, null, injector)
+    pp = m.createPreprocessor({'**/*.js': ['fake']}, null, null, injector)
 
     var file = {originalPath: '/some/.dir/a.js', path: 'path'}
 
@@ -77,7 +77,7 @@ describe('preprocessor', () => {
 
     var injector = new di.Injector([{'preprocessor:fake': ['factory', () => fakePreprocessor]}])
     var config = {'**/*.txt': ['fake']}
-    pp = m.createPreprocessor(config, null, injector)
+    pp = m.createPreprocessor(config, null, null, injector)
 
     var file = {originalPath: '/some/a.js', path: 'path'}
 
@@ -97,7 +97,7 @@ describe('preprocessor', () => {
     })
 
     var injector = new di.Injector([{'preprocessor:fake': ['factory', () => fakePreprocessor]}])
-    pp = m.createPreprocessor({'**/*.js': ['fake']}, null, injector)
+    pp = m.createPreprocessor({'**/*.js': ['fake']}, null, null, injector)
 
     var file = {originalPath: '/some/a.txt', path: 'path'}
 
@@ -123,7 +123,7 @@ describe('preprocessor', () => {
       'preprocessor:fake2': ['factory', () => fakePreprocessor2]
     }])
 
-    pp = m.createPreprocessor({'**/*.js': ['fake1', 'fake2']}, null, injector)
+    pp = m.createPreprocessor({'**/*.js': ['fake1', 'fake2']}, null, null, injector)
 
     var file = {originalPath: '/some/a.js', path: 'path'}
 
@@ -137,7 +137,7 @@ describe('preprocessor', () => {
   })
 
   it('should compute SHA', done => {
-    pp = m.createPreprocessor({}, null, new di.Injector([]))
+    pp = m.createPreprocessor({}, null, null, new di.Injector([]))
     var file = {originalPath: '/some/a.js', path: 'path'}
 
     pp(file, () => {
@@ -167,7 +167,7 @@ describe('preprocessor', () => {
       'preprocessor:fake': ['factory', () => fakePreprocessor]
     }])
 
-    pp = m.createPreprocessor({'**/a.js': ['fake']}, null, injector)
+    pp = m.createPreprocessor({'**/a.js': ['fake']}, null, null, injector)
 
     var fileProcess = {originalPath: '/some/a.js', path: 'path'}
     var fileSkip = {originalPath: '/some/b.js', path: 'path'}
@@ -193,7 +193,7 @@ describe('preprocessor', () => {
       'preprocessor:failing': ['factory', () => failingPreprocessor]
     }])
 
-    pp = m.createPreprocessor({'**/*.js': ['failing']}, null, injector)
+    pp = m.createPreprocessor({'**/*.js': ['failing']}, null, null, injector)
 
     var file = {originalPath: '/some/a.js', path: 'path'}
 
@@ -217,7 +217,7 @@ describe('preprocessor', () => {
       'preprocessor:fake': ['factory', () => fakePreprocessor]
     }])
 
-    pp = m.createPreprocessor({'**/*.js': ['failing', 'fake']}, null, injector)
+    pp = m.createPreprocessor({'**/*.js': ['failing', 'fake']}, null, null, injector)
 
     var file = {originalPath: '/some/a.js', path: 'path'}
 
@@ -236,7 +236,7 @@ describe('preprocessor', () => {
       'preprocessor:fake': ['factory', () => fakePreprocessor]
     }])
 
-    pp = m.createPreprocessor({'**/*': ['fake']}, null, injector)
+    pp = m.createPreprocessor({'**/*': ['fake']}, null, null, injector)
 
     var file = {originalPath: '/some/photo.png', path: 'path'}
 
@@ -258,7 +258,7 @@ describe('preprocessor', () => {
       'preprocessor:fake': ['factory', () => fakePreprocessor]
     }])
 
-    pp = m.createPreprocessor({'**/*': ['fake']}, null, injector)
+    pp = m.createPreprocessor({'**/*': ['fake']}, null, null, injector)
 
     var file = {originalPath: '/some/CAM_PHOTO.JPG', path: 'path'}
 
@@ -267,6 +267,38 @@ describe('preprocessor', () => {
 
       expect(fakePreprocessor).not.to.have.been.called
       expect(file.content).to.be.an.instanceof(Buffer)
+      done()
+    })
+  })
+
+  it('should respect preprocessorOrder', (done) => {
+    var callOrder = []
+    var fakePreprocessor1 = sinon.spy((content, file, done) => {
+      callOrder.push(1)
+      done(null, content)
+    })
+    var fakePreprocessor2 = sinon.spy((content, file, done) => {
+      callOrder.push(2)
+      done(null, content)
+    })
+
+    var injector = new di.Injector([{
+      'preprocessor:fake1': ['factory', () => fakePreprocessor1],
+      'preprocessor:fake2': ['factory', () => fakePreprocessor2]
+    }])
+
+    pp = m.createPreprocessor({'**/*': ['fake2', 'fake1']}, null, ['fake1',
+        'fake2'], injector)
+
+    var file = {originalPath: '/some/a.js', path: 'path'}
+
+    pp(file, err => {
+      if (err) throw err
+
+      expect(fakePreprocessor1).to.have.been.called
+      expect(fakePreprocessor2).to.have.been.called
+      expect(callOrder[0]).to.equal(1)
+      expect(callOrder[1]).to.equal(2)
       done()
     })
   })

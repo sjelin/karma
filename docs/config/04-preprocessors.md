@@ -93,3 +93,14 @@ return `false` and the preprocessor would not be executed on the CoffeeScript fi
 [custom plugins]: ../dev/plugins.html
 [plugins]: plugins.html
 [issue788]: https://github.com/karma-runner/karma/issues/788
+
+## Ordering
+
+If you need preprocessors to run in a specific order, you can use
+`preprocessorOrder`.  So if you needed [coverage](
+https://github.com/karma-runner/karma-coverage) to run before [googmodule](
+https://github.com/karma-runner/karma-googmodule-preprocessor) you would do:
+
+```js
+  preprocessorOrder: ['coverage', 'googmodule']
+```
